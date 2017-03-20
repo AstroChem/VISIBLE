@@ -1,0 +1,70 @@
+VISIBLE (VISIbility Based Line Extraction) - Python package for spectral line extraction from interferometric data using matched filtering
+====================================================
+
+  Purpose:
+    matched_filter allows you to apply an approximated matched filter to weak line data and extract a stronger signal. 
+
+    The filter can be created from a FITS image or RADMC3D output image, and the weak line data can be a CASA MS or uvfits file.
+
+    The filter response can be output either to a .npy file or returned back to the user (for scripting)
+
+
+    Parameters:
+    __________
+    filterfile : the input filter image, needs to be in a valid FITS format with units of DEG for the RA and DEC, a RADMC3D image.out file (ascii format), or a SkyImage object from vis_sample. Must have an accurate reference frequency
+
+    datafile - uvfits file or CASA measurement set containing the weak line. This should be as broad as possible (for a baseline), and NOT just a small window around the line
+
+    mu_RA - (optional, default = 0) right ascension offset from phase center in arcseconds (i.e. filter visibilities are sampled as if the image is centered at (mu_RA, mu_DEC)
+
+    mu_DEC - (optional, default = 0) declination offset from phase center in arcseconds (i.e. filter visibilities are sampled as if the image is centered at (mu_RA, mu_DEC)
+ 
+    src_distance - distance to source in parsecs - only required for RADMC3D input images
+
+    interpolate - (optional, default = True) whether the filter is interpolated to match the the local velocity spacing of the data. Should remain true unless you have a good reason otherwise.
+
+    outfile - (optional) name of output file for filter response, needs to have a .npy extension
+
+    mode - (optional, default = 'channel') output format of the x axis of the impulse response spectrum. Options are 'channel', 'frequency', and 'velocity'. 'velocity' requires a rest frequency input
+
+    restfreq - (optional) rest frequency for 'velocity' output mode, input as a float in MHz
+
+    verbose - (boolean) flag to print all progress output and timing
+
+
+
+
+    Usage:
+    __________
+    >> from VISIBLE import matched_filter                                                                           # import the matched_filter command  
+
+    >> matched_filter(filterfile="my_filter.fits", datafile="observations.ms", outfile="spectrum.npy")              # filter observations.ms using the filter image from my_filter.fits and output spectrum to spectrum.npy
+
+    >> spectrum = matched_filter(filterfile="my_filter.fits", datafile="observations.ms")                           # filter observations.ms using the filter image from my_filter.fits, result stored in variable spectrum
+
+    In the second usage, interp_vis is a numpy array, i.e. [frequencies, spectrum]
+
+
+    >> spectrum = matched_filter(filterfile="my_filter.fits", datafile="observations.ms.cvel", mode="frequency")         # same as above, output with x axis in units of frequency. Input ms should be run through cvel prior to filtering
+
+    >> spectrum = matched_filter(filterfile="my_filter.fits", datafile="observations.ms.cvel", mode="velocity", restfreq="235000")         # same as above, output with x axis in units of lsrk velocity. Requires input of a rest frequency, and input ms should be run through cvel prior to filtering
+
+
+=================================
+
+
+
+Source Structure
+------------
+
+Contents:
+
+    VISBILE
+    |-- VISIBLE
+    |   |-- matched_filter.py                            : defines the matched_filter() function
+    |   | 
+    |   |-- __init__.py
+    |
+    |-- README
+    |-- LICENSE
+
