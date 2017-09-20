@@ -231,7 +231,7 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
 
     xc = np.zeros((data.VV.shape[1] - nchan_kernel + 1), dtype='complex128')  
     for i in np.arange(nvis):
-        xc += np.correlate(data.VV[i], kernel[i])*data.wgts[i]/np.sqrt(np.dot(kernel[i],kernel[i].conj())*data.wgts[i])
+        xc += np.correlate(data.VV[i]*data.wgts[i], kernel[i])/np.sqrt(np.dot(kernel[i],kernel[i].conj())*np.sum(data.wgts[i]))
 
     if verbose: 
         t1 = time.time()
