@@ -4,6 +4,7 @@ import matplotlib.pylab as pl
 import sys
 from vis_sample.file_handling import *
 from scipy import ndimage
+from scipy import sparse
 import time
 
 def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_distance=None, interpolate=True, statwt=False, window_func='Hanning', binfactor=2, outfile=None, mode='channel', restfreq=None, plot=False, verbose=False):
@@ -87,6 +88,7 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
 
     if not (type(binfactor) is int):
         print 'ERROR: Please specify a valid binning factor. Value should be a positive integer and values greater than 4 will result in data being treated as having no channel correlation.'
+        print type(binfactor)
         return
     elif binfactor < 1:
         print 'ERROR: Please specify a valid binning factor. Value should be a positive integer and values greater than 4 will result in data being treated as having no channel correlation.'
@@ -263,22 +265,22 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
 
         elif binfactor == 1:
             diagonals = [2./3.*np.ones(nchan_kernel-1), np.ones(nchan_kernel), 2./3.*np.ones(nchan_kernel-1)]         
-            R = scipy.sparse.diags(diagonals, [-1, 0, 1], format='csc').toarray()
+            R = sparse.diags(diagonals, [-1, 0, 1], format='csc').toarray()
             R_inv = np.linalg.inv(R)
 
         elif binfactor == 2:
             diagonals = [3./10.*np.ones(nchan_kernel-1), np.ones(nchan_kernel), 3./10.*np.ones(nchan_kernel-1)]     
-            R = scipy.sparse.diags(diagonals, [-1, 0, 1], format='csc').toarray()
+            R = sparse.diags(diagonals, [-1, 0, 1], format='csc').toarray()
             R_inv = np.linalg.inv(R)
 
         elif binfactor == 3:
             diagonals = [1./6.*np.ones(nchan_kernel-1), np.ones(nchan_kernel), 1./6.*np.ones(nchan_kernel-1)]          
-            R = scipy.sparse.diags(diagonals, [-1, 0, 1], format='csc').toarray()
+            R = sparse.diags(diagonals, [-1, 0, 1], format='csc').toarray()
             R_inv = np.linalg.inv(R)
 
         elif binfactor == 4:
             diagonals = [3./26.*np.ones(nchan_kernel-1), np.ones(nchan_kernel), 3./26.*np.ones(nchan_kernel-1)]     
-            R = scipy.sparse.diags(diagonals, [-1, 0, 1], format='csc').toarray()
+            R = sparse.diags(diagonals, [-1, 0, 1], format='csc').toarray()
             R_inv = np.linalg.inv(R)
 
     if verbose: 
