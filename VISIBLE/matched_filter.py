@@ -85,10 +85,12 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
         print 'ERROR: Please specify a valid window function. Options are "Hanning" or "none".'
         return
 
-    if (type(binfactor) != 'int'):
+    if not (type(binfactor) is int):
         print 'ERROR: Please specify a valid binning factor. Value should be a positive integer and values greater than 4 will result in data being treated as having no channel correlation.'
+        return
     elif binfactor < 1:
         print 'ERROR: Please specify a valid binning factor. Value should be a positive integer and values greater than 4 will result in data being treated as having no channel correlation.'
+        return
 
     #################################
     #   data visibility retrieval   #
@@ -131,7 +133,7 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
     weight_offset = np.abs(wgt_mean - 1/data_std**2)/wgt_mean*100
 
     if weight_offset > 25.:
-        print: "WARNING: data weights are more than 25% offset that expected from the total data variance. This may be due to very strong lines in the data or improperly initialized data weights. If resulting spectrum is not properly normalized, consider using statwt."
+        print "WARNING: data weights are more than 25% offset that expected from the total data variance. This may be due to very strong lines in the data or improperly initialized data weights. If resulting spectrum is not properly normalized, consider using statwt."
 
     if verbose: 
         t1 = time.time()
