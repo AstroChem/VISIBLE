@@ -9,7 +9,7 @@ VISIBLE (VISIbility Based Line Extraction) - Python package for spectral line ex
     The filter response can be output either to a .npy file or returned back to the user (for scripting)
 
 
-    Parameters:
+    Parameters
     __________
     filterfile : the input filter image, needs to be in a valid FITS format with units of DEG for the RA and DEC, a RADMC3D image.out file (ascii format), or a SkyImage object from vis_sample. Must have an accurate reference frequency
 
@@ -22,6 +22,12 @@ VISIBLE (VISIbility Based Line Extraction) - Python package for spectral line ex
     src_distance - distance to source in parsecs - only required for RADMC3D input images
 
     interpolate - (optional, default = True) whether the filter is interpolated to match the the local velocity spacing of the data. Should remain true unless you have a good reason otherwise.
+
+    statwt - (optional, default = False) whether the data weights were calculated using the CASA task statwt or not. Enabling this option corrects for the fact taht weights calculated by statwt are currently offset from the correct absolute weights by x2. If this option is not enabled then the data weights are assumed to be correct as-is. Use of statwt is strongly recommended.
+
+    window_func - (optional, default = Hanning) the window function used in processing the time domain data, which introduces a channel correlation. A Hanning filter is used for ALMA. Can be set to 'none' for synthetic data, other options (Welch, Hamming, etc.) will be added in the future.
+
+    binfactor - (optional, default = 2) the degree to which data was averaged/binned after the window function was applied. The default for ALMA observations after Cycle 3 is a factor of 2 (set in the OT). Valid factors are 1, 2, 3, and 4. Factors over 4 are treated as having no channel correlation.
 
     outfile - (optional) name of output file for filter response, needs to have a .npy extension
 
