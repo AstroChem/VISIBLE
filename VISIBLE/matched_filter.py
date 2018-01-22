@@ -88,7 +88,6 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
 
     if not (type(binfactor) is int):
         print 'ERROR: Please specify a valid binning factor. Value should be a positive integer and values greater than 4 will result in data being treated as having no channel correlation.'
-        print type(binfactor)
         return
     elif binfactor < 1:
         print 'ERROR: Please specify a valid binning factor. Value should be a positive integer and values greater than 4 will result in data being treated as having no channel correlation.'
@@ -143,9 +142,6 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
         print "Data read time = " + str(t1-t0)
         
 
-    print data.freqs[0]
-    print data.freqs[-1]
-
 
     #############################
     #   Read the filter image   #
@@ -179,7 +175,7 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
 
     if verbose: 
         t1 = time.time()
-        print "Read filter image: "+datafile
+        print "Read filter image: " + datafile
         print "Filter read time = " + str(t1-t0)
 
 
@@ -235,8 +231,6 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
             t1 = time.time()
             print "Filter interpolated"
             print "Filter interpolation time = " + str(t1-t0)
-
-        print filter_img.data.shape
 
 
 
