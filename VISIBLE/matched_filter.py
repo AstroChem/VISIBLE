@@ -6,7 +6,7 @@ from vis_sample.file_handling import *
 from scipy import ndimage
 import time
 
-def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_distance=None, interpolate=True, outfile=None, mode='channel', restfreq=None, plot=False, verbose=False):
+def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_distance=None, interpolate=True, statwt=False, window_func='Hanning', binfactor=2, outfile=None, mode='channel', restfreq=None, plot=False, verbose=False):
     """Applies an approximated matched filter to interferometric data to boost SNR
 
     matched_filter allows you to apply an approximated matched filter to weak line data and extract a stronger signal. 
@@ -29,6 +29,12 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
     src_distance - distance to source in parsecs - only required for RADMC3D input images
 
     interpolate - (optional, default = True) whether the filter is interpolated to match the the local velocity spacing of the data. Should remain true unless you have a good reason otherwise.
+
+    statwt - (optional, default = False) whether the data weights were calculated using the CASA task statwt or not. Enabling this option corrects for the fact taht weights calculated by statwt are currently offset from the correct absolute weights by x2. If this option is not enabled then the data weights are assumed to be correct as-is. Use of statwt is strongly recommended.
+
+    window_func - (optional, default = Hanning) the window function used in processing the time domain data, which introduces a channel correlation. A Hanning filter is used for ALMA. Can be set to 'none' for synthetic data, other options (Welch, Hamming, etc.) will be added in the future.
+
+    binfactor - (optional, default = 2) the degree to which data was averaged/binned after the window function was applied. The default for ALMA observations after Cycle 3 is a factor of 2 (set in the OT). Valid factors are 1, 2, 3, and 4. Factors over 4 are treated as having no channel correlation.
 
     outfile - (optional) name of output file for filter response, needs to have a .npy extension
 
@@ -75,6 +81,14 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
     if mode=='frequency':
         print "WARNING: ALMA does not Doppler track, make sure that the datafile has been run through cvel or frequencies will not be correct"
 
+    if (window_func != "Hanning") and (window_func != "none"):
+        print 'ERROR: Please specify a valid window function. Options are "Hanning" or "none".'
+        return
+
+    if (type(binfactor) != 'int'):
+        print 'ERROR: Please specify a valid binning factor. Value should be a positive integer and values greater than 4 will result in data being treated as having no channel correlation.'
+    elif binfactor < 1:
+        print 'ERROR: Please specify a valid binning factor. Value should be a positive integer and values greater than 4 will result in data being treated as having no channel correlation.'
 
     #################################
     #   data visibility retrieval   #
@@ -95,6 +109,29 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
             sys.exit(1)
 
     nvis = data.VV.shape[0]
+
+    if len(data.wgts.shape) > 2:
+        data.wgts = np.squeeze(data.wgts)
+
+    wgt_dims = len(data.wgts.shape)
+
+    if wgt_dims == 2:
+        print "Dataset has a weight spectrum, compressing channelized weights via averaging to a single weight per visibility."
+        data.wgts = np.mean(data.wgts, axis=1)
+
+    if statwt:
+        data.wgts *= 0.5
+    else:
+        print "statwt set as False, assuming data weights are correct as-is. If resulting spectrum is not properly normalized, consider using statwt."
+
+    # using weight value as a temporary sketchy replacement for finding flagged visibilities
+    wgt_mean = np.mean(data.wgts[data.wgts > 0.00001])
+    data_std = np.std(data.VV[data.wgts > 0.00001])
+    
+    weight_offset = np.abs(wgt_mean - 1/data_std**2)/wgt_mean*100
+
+    if weight_offset > 25.:
+        print: "WARNING: data weights are more than 25% offset that expected from the total data variance. This may be due to very strong lines in the data or improperly initialized data weights. If resulting spectrum is not properly normalized, consider using statwt."
 
     if verbose: 
         t1 = time.time()
@@ -212,13 +249,40 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
     kernel = np.empty(nchan_kernel*nvis, dtype='complex128').reshape(nvis, nchan_kernel)
     kernel[:,:] = vis_sample(imagefile=filter_img, uu=data.uu, vv=data.vv, mu_RA=mu_RA, mu_DEC=mu_DEC)
 
+    # calculate the noise covariance matrix and its inverse
+    if window_func == "none":
+        R_inv = np.identity(nchan_kernel)
+
+    else:
+        # now we assuming window_func is "Hanning"
+        if binfactor > 4:
+            # treat binning factors larger than 4 as having no channel correlation (valid for Hanning window function)
+            R_inv = np.identity(nchan_kernel)
+
+        elif binfactor == 1:
+            diagonals = [2./3.*np.ones(nchan_kernel-1), np.ones(nchan_kernel), 2./3.*np.ones(nchan_kernel-1)]         
+            R = scipy.sparse.diags(diagonals, [-1, 0, 1], format='csc').toarray()
+            R_inv = np.linalg.inv(R)
+
+        elif binfactor == 2:
+            diagonals = [3./10.*np.ones(nchan_kernel-1), np.ones(nchan_kernel), 3./10.*np.ones(nchan_kernel-1)]     
+            R = scipy.sparse.diags(diagonals, [-1, 0, 1], format='csc').toarray()
+            R_inv = np.linalg.inv(R)
+
+        elif binfactor == 3:
+            diagonals = [1./6.*np.ones(nchan_kernel-1), np.ones(nchan_kernel), 1./6.*np.ones(nchan_kernel-1)]          
+            R = scipy.sparse.diags(diagonals, [-1, 0, 1], format='csc').toarray()
+            R_inv = np.linalg.inv(R)
+
+        elif binfactor == 4:
+            diagonals = [3./26.*np.ones(nchan_kernel-1), np.ones(nchan_kernel), 3./26.*np.ones(nchan_kernel-1)]     
+            R = scipy.sparse.diags(diagonals, [-1, 0, 1], format='csc').toarray()
+            R_inv = np.linalg.inv(R)
+
     if verbose: 
         t1 = time.time()
         print "Kernel generated"
         print "Kernel generation time = " + str(t1-t0)
-
-    print kernel.shape
-
 
 
     ###############################
@@ -230,42 +294,24 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
         t0 = time.time()
 
     xc = np.zeros((data.VV.shape[1] - nchan_kernel + 1), dtype='complex128')  
-    for i in np.arange(nvis):
-        xc += np.correlate(data.VV[i]*data.wgts[i], kernel[i])/np.sqrt(np.dot(kernel[i],kernel[i].conj())*np.sum(data.wgts[i]))
+    kernel_noise_power = 0.
+#    for i in np.arange(nvis):
+#        xc += np.correlate(data.VV[i]*data.wgts[i], kernel[i])/np.sqrt(np.dot(kernel[i],kernel[i].conj())*np.sum(data.wgts[i]))
+
+    for v in np.arange(nvis):
+        # sketchy temporary check for flagged visibilities
+        if (not np.isnan(data.wgts[v])) and (data.wgts[v] > 0.00001):
+            xc += np.correlate(data.VV[v], np.matmul(data.wgts[v]*R_inv, kernel[v]))
+            kernel_noise_power += np.dot(kernel[v],np.matmul(data.wgts[v]*R_inv, kernel[v].conj()))
+
+    # normalize the output such that real and imag noise powers are both 1 (hence factor of sqrt(2))
+    xc = xc/np.sqrt(kernel_noise_power)*np.sqrt(2)
 
     if verbose: 
         t1 = time.time()
         print "Data filtered"
         print "Kernel convolution time = " + str(t1-t0)
-
-
-    '''
-
-    ##########################
-    #   Normalize response   #
-    ##########################
-    
-    dummy_xc_real = np.real(xc)
-    noise = np.copy(xc)
-    dummy_xc_mean = np.mean(dummy_xc_real)
-    dummy_xc_std = np.std(dummy_xc_real)
-
-    for chan in np.where(dummy_xc_real < (dummy_xc_mean - dummy_xc_std*4))[0]:
-        print chan
-        noise[chan-10:chan+10] = np.nan
-
-    for chan in np.where(dummy_xc_real > (dummy_xc_mean + dummy_xc_std*4))[0]:
-        noise[chan-10:chan+10] = np.nan
-
-    noise_mean = np.nanmean(noise)
-    noise_std = np.nanstd(np.real(noise))
-
-    xc = xc - noise_mean
-    xc = xc/noise_std
-
-    print "max signal = " + str(np.max(np.real(xc))) + " sigma"
-
-    '''
+        print "max signal = " + str(np.max(np.real(xc))) + " sigma"
 
 
     ###############################
