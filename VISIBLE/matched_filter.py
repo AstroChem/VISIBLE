@@ -96,7 +96,7 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
         return
 
     if outfile:
-        if not ((type(outfile) is str) or (type(outfile) is str)):
+        if not ((type(outfile) is str) or (type(outfile) is list)):
             print "ERROR: Please supply a valid outfile path or list of paths (matching the number of filter images)."
             return
 
