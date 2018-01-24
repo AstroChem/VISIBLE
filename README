@@ -11,9 +11,9 @@ VISIBLE (VISIbility Based Line Extraction) - Python package for spectral line ex
 
     Parameters
     __________
-    filterfile : the input filter image, needs to be in a valid FITS format with units of DEG for the RA and DEC, a RADMC3D image.out file (ascii format), or a SkyImage object from vis_sample. Must have an accurate reference frequency
+    filterfile : input filter image or a list of filter images, needs to be in a valid FITS format with units of DEG for the RA and DEC, a RADMC3D image.out file (ascii format), or a SkyImage object from vis_sample. Must have an accurate reference frequency
 
-    datafile - uvfits file or CASA measurement set containing the weak line. This should be as broad as possible (for a baseline), and NOT just a small window around the line
+    datafile - path to uvfits file or CASA measurement set containing the weak line. This should be as broad as possible (for a baseline), and NOT just a small window around the line
 
     mu_RA - (optional, default = 0) right ascension offset from phase center in arcseconds (i.e. filter visibilities are sampled as if the image is centered at (mu_RA, mu_DEC)
 
@@ -29,11 +29,13 @@ VISIBLE (VISIbility Based Line Extraction) - Python package for spectral line ex
 
     binfactor - (optional, default = 2) the degree to which data was averaged/binned after the window function was applied. The default for ALMA observations after Cycle 3 is a factor of 2 (set in the OT). Valid factors are 1, 2, 3, and 4. Factors over 4 are treated as having no channel correlation.
 
-    outfile - (optional) name of output file for filter response, needs to have a .npy extension
+    outfile - (optional) name of output file for filter response, needs to have a .npy extension. If n filter images are provided then n outfiles must be specified. 
 
-    mode - (optional, default = 'channel') output format of the x axis of the impulse response spectrum. Options are 'channel', 'frequency', and 'velocity'. 'velocity' requires a rest frequency input
+    mode - (optional, default = 'channel') output format of the x-axis of the impulse response spectrum. Options are 'channel', 'frequency', and 'velocity'. 'velocity' requires a rest frequency input
 
     restfreq - (optional) rest frequency for 'velocity' output mode, input as a float in MHz
+
+    plot - (optional) plot the real portion of the filter response spectrum against the x-axis chosen by the 'mode' parameter. The output will still be either returned or saved to 'outfile'.
 
     verbose - (boolean) flag to print all progress output and timing
 
