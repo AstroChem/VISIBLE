@@ -7,7 +7,7 @@ from scipy import ndimage
 from scipy import sparse
 import time
 
-def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_distance=None, interpolate=True, statwt=False, window_func='Hanning', binfactor=2, outfile=None, mode='channel', restfreq=None, plot=False, verbose=False):
+def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_distance=None, interpolate=True, weights='renormalize', window_func='Hanning', binfactor=2, outfile=None, mode='channel', restfreq=None, plot=False, verbose=False):
     """Applies an approximated matched filter to interferometric data to boost SNR
 
     matched_filter allows you to apply an approximated matched filter to weak line data and extract a stronger signal. 
@@ -31,9 +31,9 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
 
     interpolate - (optional, default = True) whether the filter is interpolated to match the the local velocity spacing of the data. Should remain true unless you have a good reason otherwise.
 
-    statwt - (optional, default = False) whether the data weights were calculated using the CASA task statwt or not. Enabling this option corrects for the fact taht weights calculated by statwt are currently offset from the correct absolute weights by x2. If this option is not enabled then the data weights are assumed to be correct as-is. Use of statwt is strongly recommended.
+    weights - (optional, default = 'renormalize') options are 'renormalize', 'preserve', and 'statwt'. 'renormalize' will calculate the offset (if any) between the current weights and the scatter of the visibilities, and renormalize accordingly. If 'preserve' is selected, then the data weights are assumed to be correct as-is. 'statwt' will assume that the CASA task 'statwt' was applied to the data and no renormalization will be applied. 'renormalize' should not be used if strong lines are present in the data, and the application of statwt using channels without signal will be preferable.
 
-    window_func - (optional, default = Hanning) the window function used in processing the time domain data, which introduces a channel correlation. A Hanning filter is used for ALMA. Can be set to 'none' for synthetic data, other options (Welch, Hamming, etc.) will be added in the future.
+    window_func - (optional, default = 'Hanning') the window function used in processing the time domain data, which introduces a channel correlation. A Hanning filter is used for ALMA. Can be set to 'none' for synthetic data, other options (Welch, Hamming, etc.) will be added in the future.
 
     binfactor - (optional, default = 2) the degree to which data was averaged/binned after the window function was applied. The default for ALMA observations after Cycle 3 is a factor of 2 (set in the OT). Valid factors are 1, 2, 3, and 4. Factors over 4 are treated as having no channel correlation.
 
@@ -142,19 +142,24 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
         print "Dataset has a weight spectrum, compressing channelized weights via averaging to a single weight per visibility."
         data.wgts = np.mean(data.wgts, axis=1)
 
-    if statwt:
+    if weights == 'statwt':
         data.wgts *= 0.5
+    elif weights == 'preserve':
+        print "Assuming data weights are correct as-is. If resulting spectrum is not properly normalized, consider using 'renormalize' or applying statwt to the data."
     else:
-        print "statwt set as False, assuming data weights are correct as-is. If resulting spectrum is not properly normalized, consider using statwt."
+        # using weight value as a temporary sketchy replacement for finding flagged visibilities
+        wgt_mean = np.mean(data.wgts[data.wgts > 0.00001])
+        data_std = np.std(data.VV[data.wgts > 0.00001])
+        data.wgts *= (1/data_std**2)/wgt_mean
 
-    # using weight value as a temporary sketchy replacement for finding flagged visibilities
+    # check if weights look correct
     wgt_mean = np.mean(data.wgts[data.wgts > 0.00001])
     data_std = np.std(data.VV[data.wgts > 0.00001])
     
     weight_offset = np.abs(wgt_mean - 1/data_std**2)/wgt_mean*100
 
     if weight_offset > 25.:
-        print "WARNING: data weights are more than 25% offset that expected from the total data variance. This may be due to very strong lines in the data or improperly initialized data weights. If resulting spectrum is not properly normalized, consider using statwt."
+        print "WARNING: data weights are more than 25% offset that expected from the total data variance. This may be due to very strong lines in the data or improperly initialized data weights. If resulting spectrum is not properly normalized, consider using 'renormalize' or applying statwt to the data."
 
     if verbose: 
         t1 = time.time()
