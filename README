@@ -23,23 +23,23 @@ VISIBLE (VISIbility Based Line Extraction) - Python package for spectral line ex
 
     interpolate - (optional, default = True) whether the filter is interpolated to match the the local velocity spacing of the data. Should remain true unless you have a good reason otherwise.
 
-    statwt - (optional, default = False) whether the data weights were calculated using the CASA task statwt or not. Enabling this option corrects for the fact taht weights calculated by statwt are currently offset from the correct absolute weights by x2. If this option is not enabled then the data weights are assumed to be correct as-is. Use of statwt is strongly recommended.
+    weights - (optional, default = 'renormalize') options are 'renormalize', 'preserve', and 'statwt'. 'renormalize' will calculate the offset (if any) between the current weights and the scatter of the visibilities, and renormalize accordingly. If 'preserve' is selected, then the data weights are assumed to be correct as-is. 'statwt' will assume that the CASA task 'statwt' was applied to the data and no renormalization will be applied. 'renormalize' should not be used if strong lines are present in the data, and the application of statwt using channels without signal will be preferable.
 
-    window_func - (optional, default = Hanning) the window function used in processing the time domain data, which introduces a channel correlation. A Hanning filter is used for ALMA. Can be set to 'none' for synthetic data, other options (Welch, Hamming, etc.) will be added in the future.
+    norm_chans - (optional) specify signal free channels to normalize the output spectrum. Channels should be specified as a list of start/stop channel pairs (i.e. [[0,100][130,400],[450,600]]). This option should only be used if the selected 'weights' option cannot normalize the spectrum properly. Note that the channel indices are for the 'n_chan - n_kernel + 1' sized impulse response spectrum
+
+    window_func - (optional, default = 'Hanning') the window function used in processing the time domain data, which introduces a channel correlation. A Hanning filter is used for ALMA. Can be set to 'none' for synthetic data, other options (Welch, Hamming, etc.) will be added in the future.
 
     binfactor - (optional, default = 2) the degree to which data was averaged/binned after the window function was applied. The default for ALMA observations after Cycle 3 is a factor of 2 (set in the OT). Valid factors are 1, 2, 3, and 4. Factors over 4 are treated as having no channel correlation.
 
     outfile - (optional) name of output file for filter response, needs to have a .npy extension. If n filter images are provided then n outfiles must be specified. 
 
-    mode - (optional, default = 'channel') output format of the x-axis of the impulse response spectrum. Options are 'channel', 'frequency', and 'velocity'. 'velocity' requires a rest frequency input
+    mode - (optional, default = 'channel') output format of the x-axis of the impulse response spectrum. Options are 'channel', 'frequency', and 'velocity'.
 
-    restfreq - (optional) rest frequency for 'velocity' output mode, input as a float in MHz
+    restfreq - (optional) rest frequency for 'velocity' output mode, input as a float in MHz. If a rest frequency is not specified then the center frequency of the data will be used.
 
     plot - (optional) plot the real portion of the filter response spectrum against the x-axis chosen by the 'mode' parameter. The output will still be either returned or saved to 'outfile'.
 
     verbose - (boolean) flag to print all progress output and timing
-
-
 
 
     Usage:
@@ -48,14 +48,11 @@ VISIBLE (VISIbility Based Line Extraction) - Python package for spectral line ex
 
     >> matched_filter(filterfile="my_filter.fits", datafile="observations.ms", outfile="spectrum.npy")              # filter observations.ms using the filter image from my_filter.fits and output spectrum to spectrum.npy
 
-    >> spectrum = matched_filter(filterfile="my_filter.fits", datafile="observations.ms")                           # filter observations.ms using the filter image from my_filter.fits, result stored in variable spectrum
-
-    In the second usage, interp_vis is a numpy array, i.e. [frequencies, spectrum]
-
+    >> output = matched_filter(filterfile="my_filter.fits", datafile="observations.ms")                           # filter observations.ms using the filter image from my_filter.fits, result stored in variable 'output', where output looks likes [channels, xc_spectrum].
 
     >> spectrum = matched_filter(filterfile="my_filter.fits", datafile="observations.ms.cvel", mode="frequency")         # same as above, output with x axis in units of frequency. Input ms should be run through cvel prior to filtering
 
-    >> spectrum = matched_filter(filterfile="my_filter.fits", datafile="observations.ms.cvel", mode="velocity", restfreq="235000")         # same as above, output with x axis in units of lsrk velocity. Requires input of a rest frequency, and input ms should be run through cvel prior to filtering
+    >> spectrum = matched_filter(filterfile="my_filter.fits", datafile="observations.ms.cvel", mode="velocity")         # same as above, output with x axis in units of lsrk velocity. Input ms should be run through cvel prior to filtering
 
 
 =================================
