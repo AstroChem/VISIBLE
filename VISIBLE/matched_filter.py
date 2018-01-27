@@ -7,7 +7,7 @@ from scipy import ndimage
 from scipy import sparse
 import time
 
-def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_distance=None, interpolate=True, weights='renormalize', window_func='Hanning', binfactor=2, outfile=None, mode='channel', restfreq=None, plot=False, verbose=False):
+def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_distance=None, interpolate=True, weights='renormalize', norm_chans=None, window_func='Hanning', binfactor=2, outfile=None, mode='channel', restfreq=None, plot=False, verbose=False):
     """Applies an approximated matched filter to interferometric data to boost SNR
 
     matched_filter allows you to apply an approximated matched filter to weak line data and extract a stronger signal. 
@@ -33,15 +33,17 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
 
     weights - (optional, default = 'renormalize') options are 'renormalize', 'preserve', and 'statwt'. 'renormalize' will calculate the offset (if any) between the current weights and the scatter of the visibilities, and renormalize accordingly. If 'preserve' is selected, then the data weights are assumed to be correct as-is. 'statwt' will assume that the CASA task 'statwt' was applied to the data and no renormalization will be applied. 'renormalize' should not be used if strong lines are present in the data, and the application of statwt using channels without signal will be preferable.
 
+    norm_chans - (optional) specify signal free channels to normalize the output spectrum. Channels should be specified as a list of start/stop channel pairs (i.e. [[0,100][130,400],[450,600]]). This option should only be used if the selected 'weights' option cannot normalize the spectrum properly. Note that the channel indices are for the 'n_chan - n_kernel + 1' sized impulse response spectrum
+
     window_func - (optional, default = 'Hanning') the window function used in processing the time domain data, which introduces a channel correlation. A Hanning filter is used for ALMA. Can be set to 'none' for synthetic data, other options (Welch, Hamming, etc.) will be added in the future.
 
     binfactor - (optional, default = 2) the degree to which data was averaged/binned after the window function was applied. The default for ALMA observations after Cycle 3 is a factor of 2 (set in the OT). Valid factors are 1, 2, 3, and 4. Factors over 4 are treated as having no channel correlation.
 
     outfile - (optional) name of output file for filter response, needs to have a .npy extension. If n filter images are provided then n outfiles must be specified. 
 
-    mode - (optional, default = 'channel') output format of the x-axis of the impulse response spectrum. Options are 'channel', 'frequency', and 'velocity'. 'velocity' requires a rest frequency input
+    mode - (optional, default = 'channel') output format of the x-axis of the impulse response spectrum. Options are 'channel', 'frequency', and 'velocity'.
 
-    restfreq - (optional) rest frequency for 'velocity' output mode, input as a float in MHz
+    restfreq - (optional) rest frequency for 'velocity' output mode, input as a float in MHz. If a rest frequency is not specified then the center frequency of the data will be used.
 
     plot - (optional) plot the real portion of the filter response spectrum against the x-axis chosen by the 'mode' parameter. The output will still be either returned or saved to 'outfile'.
 
@@ -54,14 +56,11 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
 
     >> matched_filter(filterfile="my_filter.fits", datafile="observations.ms", outfile="spectrum.npy")              # filter observations.ms using the filter image from my_filter.fits and output spectrum to spectrum.npy
 
-    >> spectrum = matched_filter(filterfile="my_filter.fits", datafile="observations.ms")                           # filter observations.ms using the filter image from my_filter.fits, result stored in variable spectrum
-
-    In the second usage, interp_vis is a numpy array, i.e. [frequencies, spectrum]
-
+    >> output = matched_filter(filterfile="my_filter.fits", datafile="observations.ms")                           # filter observations.ms using the filter image from my_filter.fits, result stored in variable 'output', where output looks likes [channels, xc_spectrum].
 
     >> spectrum = matched_filter(filterfile="my_filter.fits", datafile="observations.ms.cvel", mode="frequency")         # same as above, output with x axis in units of frequency. Input ms should be run through cvel prior to filtering
 
-    >> spectrum = matched_filter(filterfile="my_filter.fits", datafile="observations.ms.cvel", mode="velocity", restfreq="235000")         # same as above, output with x axis in units of lsrk velocity. Requires input of a rest frequency, and input ms should be run through cvel prior to filtering
+    >> spectrum = matched_filter(filterfile="my_filter.fits", datafile="observations.ms.cvel", mode="velocity")         # same as above, output with x axis in units of lsrk velocity. Input ms should be run through cvel prior to filtering
     """
 
     # Error/warning cases #
@@ -72,11 +71,6 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
     if not datafile:
         print "ERROR: Please supply an input MS or uvfits file to filter"
         return 
-
-    if mode=='velocity':
-        if not restfreq:
-            print "ERROR: Please supply a rest frequency in order to calculate output velocities"
-            return 
 
     if mode=='velocity':
         print "WARNING: ALMA does not Doppler track, make sure that the datafile has been run through cvel or velocities will not be correct"
@@ -326,8 +320,6 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
 
         xc = np.zeros((data.VV.shape[1] - nchan_kernel + 1), dtype='complex128')  
         kernel_noise_power = 0.
-    #    for i in np.arange(nvis):
-    #        xc += np.correlate(data.VV[i]*data.wgts[i], kernel[i])/np.sqrt(np.dot(kernel[i],kernel[i].conj())*np.sum(data.wgts[i]))
 
         for v in np.arange(nvis):
             # sketchy temporary check for flagged visibilities
@@ -337,6 +329,14 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
 
         # normalize the output such that real and imag noise powers are both 1 (hence factor of sqrt(2))
         xc = xc/np.sqrt(kernel_noise_power)*np.sqrt(2)
+
+        if norm_chans:
+            noise_xc = []
+            for i in range(len(norm_chans)):
+                noise_xc.extend(xc[norm_chans[i][0]:norm_chans[i][1]])
+            noise_xc = np.array(noise_xc)
+            xc_real_std = np.std(np.real(noise_xc))
+            xc = xc/xc_real_std
 
         if verbose: 
             t1 = time.time()
@@ -358,6 +358,8 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
             x_axis = response_freqs
 
         else:
+            if not restfreq:
+                restfreq = np.mean(data.freqs)/1.e6
             response_freqs = (np.squeeze(data.freqs[nchan_kernel/2:-nchan_kernel/2+1]) + data_delfreq/2.0)/1.e6
             response_vels = (restfreq - response_freqs)/restfreq*c_kms
             x_axis = response_vels
@@ -433,6 +435,7 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
     #########################################
 
     elif multifilter == True:
+        outdata = []
 
         for filter_index in range(nfilter):
             curr_filterfile = filterfile[filter_index]
@@ -452,18 +455,18 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
                 filter_img = curr_filterfile
             elif "image.out" in curr_filterfile:
                 if src_distance is None:
-                     print "A source distance in pc needs to be provided in order to process a RADMC3D image file"
+                     print "ERROR: A source distance in pc needs to be provided in order to process a RADMC3D image file"
                      return 
                 else: filter_img = import_model_radmc(src_distance, curr_filterfile)
             elif "fits" in curr_filterfile:
                 filter_img = import_model_fits(curr_filterfile)
             else:
-                print "Not a valid filter image option. Please provide a FITS file, a RADMC3D image file, or a SkyImage object)."
+                print "ERROR: Not a valid filter image option. Please provide a FITS file, a RADMC3D image file, or a SkyImage object)."
                 return 
 
             # the number of filter channels needs to be smaller than the data channels
             if (len(filter_img.freqs) >= len(data.freqs)):
-                print "Number of channels in filter exceeds number of data channels. Filtering cannot continue."
+                print "ERROR: Number of channels in filter exceeds number of data channels. Filtering cannot continue."
                 return
 
             elif (len(filter_img.freqs) >= len(data.freqs)*0.5):
@@ -543,6 +546,8 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
             kernel = np.empty(nchan_kernel*nvis, dtype='complex128').reshape(nvis, nchan_kernel)
             kernel[:,:] = vis_sample(imagefile=filter_img, uu=data.uu, vv=data.vv, mu_RA=mu_RA, mu_DEC=mu_DEC)
 
+            kernel = kernel/np.mean(np.abs(kernel))
+
             # calculate the noise covariance matrix and its inverse
             if window_func == "none":
                 R_inv = np.identity(nchan_kernel)
@@ -587,25 +592,31 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
                 print "Starting kernel convolution"
                 t0 = time.time()
 
-            xc = np.zeros((data.VV.shape[1] - nchan_kernel + 1), dtype='complex128')  
+            curr_xc = np.zeros((data.VV.shape[1] - nchan_kernel + 1), dtype='complex128')  
             kernel_noise_power = 0.
-        #    for i in np.arange(nvis):
-        #        xc += np.correlate(data.VV[i]*data.wgts[i], kernel[i])/np.sqrt(np.dot(kernel[i],kernel[i].conj())*np.sum(data.wgts[i]))
 
             for v in np.arange(nvis):
                 # sketchy temporary check for flagged visibilities
                 if (not np.isnan(data.wgts[v])) and (data.wgts[v] > 0.00001):
-                    xc += np.correlate(data.VV[v], np.matmul(data.wgts[v]*R_inv, kernel[v]))
+                    curr_xc += np.correlate(data.VV[v], np.matmul(data.wgts[v]*R_inv, kernel[v]))
                     kernel_noise_power += np.dot(kernel[v],np.matmul(data.wgts[v]*R_inv, kernel[v].conj()))
 
             # normalize the output such that real and imag noise powers are both 1 (hence factor of sqrt(2))
-            xc = xc/np.sqrt(kernel_noise_power)*np.sqrt(2)
+            curr_xc = curr_xc/np.sqrt(kernel_noise_power)*np.sqrt(2)
+
+            if norm_chans:
+                curr_noise_xc = []
+                for i in range(len(norm_chans)):
+                    curr_noise_xc.extend(curr_xc[norm_chans[i][0]:norm_chans[i][1]])
+                curr_noise_xc = np.array(curr_noise_xc)
+                curr_xc_real_std = np.std(np.real(curr_noise_xc))
+                curr_xc = curr_xc/curr_xc_real_std
 
             if verbose: 
                 t1 = time.time()
                 print "Data filtered"
                 print "Kernel convolution time = " + str(t1-t0)
-                print "max signal = " + str(np.max(np.real(xc))) + " sigma"
+                print "max signal = " + str(np.max(np.real(curr_xc))) + " sigma"
 
 
             ###############################
@@ -613,17 +624,19 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
             ###############################
 
             if mode=='channel':
-                response_chans = np.arange(xc.shape[0]) + nchan_kernel/2 + 0.5
-                x_axis = response_chans
+                response_chans = np.arange(curr_xc.shape[0]) + nchan_kernel/2 + 0.5
+                curr_x_axis = response_chans
 
             elif mode=='frequency':
                 response_freqs = (np.squeeze(data.freqs[nchan_kernel/2:-nchan_kernel/2+1]) + data_delfreq/2.0)/1.e6
-                x_axis = response_freqs
+                curr_x_axis = response_freqs
 
             else:
+                if not restfreq:
+                    restfreq = np.mean(data.freqs)/1.e6
                 response_freqs = (np.squeeze(data.freqs[nchan_kernel/2:-nchan_kernel/2+1]) + data_delfreq/2.0)/1.e6
                 response_vels = (restfreq - response_freqs)/restfreq*c_kms
-                x_axis = response_vels
+                curr_x_axis = response_vels
 
 
 
@@ -638,13 +651,13 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
                 ax = pl.axes([0.12,0.13,0.85,0.84])
 
                 if mode=='channel':
-                    pl.plot(response_chans, np.real(xc))
+                    pl.plot(response_chans, np.real(curr_xc))
 
                 elif mode=='frequency':
-                    pl.plot(response_freqs, np.real(xc))
+                    pl.plot(response_freqs, np.real(curr_xc))
 
                 else:
-                    pl.plot(response_vels, np.real(xc))
+                    pl.plot(response_vels, np.real(curr_xc))
 
                 ax.minorticks_on()
 
@@ -677,11 +690,14 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
             # simplest case is just writing to a file:
             if outfile:
                 # save it
-                np.save(curr_outfile, np.vstack((x_axis, xc)))    
+                np.save(curr_outfile, np.vstack((curr_x_axis, curr_xc)))    
             
-
             # otherwise we're going to return the raw output of the filtering
             else:
-                return np.vstack((x_axis, xc))
-        return
+                outdata.append(np.vstack((curr_x_axis, curr_xc)))
+
+        if outfile:
+            return
+        else:
+            return outdata
     return
