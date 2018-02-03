@@ -6,6 +6,7 @@ from vis_sample.file_handling import *
 from scipy import ndimage
 from scipy import sparse
 import time
+import math
 
 def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_distance=None, interpolate=True, weights='renormalize', norm_chans=None, window_func='Hanning', binfactor=2, outfile=None, mode='channel', restfreq=None, plot=False, verbose=False):
     """Applies an approximated matched filter to interferometric data to boost SNR
@@ -155,6 +156,18 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
     if weight_offset > 25.:
         print "WARNING: data weights are more than 25% offset that expected from the total data variance. This may be due to very strong lines in the data or improperly initialized data weights. If resulting spectrum is not properly normalized, consider using 'renormalize' or applying statwt to the data."
 
+    # check to see if binfactor is 1. if so, bin by a factor of 2 as covariance matrix of unbinned data is ill-conditioned
+    if binfactor == 1 and window_func == "Hanning":
+        print "WARNING: unbinned Hanning smoothed data has an ill-conditioned covariance matrix. Binning data by a factor of 2 and adjusting weights to keep numerically stable. Note that channel numbers in the output filter response will correspond to the binned data. Frequencies or velocities (if selected as output mode) will be properly calculated for the binned data."
+        # force the data to have an even number of channels
+        if data.VV.shape[1] & 0x1:
+            data.VV = data.VV[:,:-1]
+            data.freqs = data.freqs[:-1]
+
+        data.VV = data.VV.reshape(nvis, data.VV.shape[1]/2, 2).mean(axis=2)
+        data.freqs = np.ndarray.tolist(np.array(data.freqs).reshape(data.VV.shape[1], 2).mean(axis=1))
+        data.wgts *= 5./3.
+
     if verbose: 
         t1 = time.time()
         print "Read data file: "+datafile
@@ -284,25 +297,20 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
                 # treat binning factors larger than 4 as having no channel correlation (valid for Hanning window function)
                 R_inv = np.identity(nchan_kernel)
 
-            elif binfactor == 1:
-                diagonals = [2./3.*np.ones(nchan_kernel-1), np.ones(nchan_kernel), 2./3.*np.ones(nchan_kernel-1)]         
+            elif (binfactor == 1) or (binfactor == 2):
+                diagonals = [3./10.*np.ones(1000-1), np.ones(1000), 3./10.*np.ones(1000-1)]     
                 R = sparse.diags(diagonals, [-1, 0, 1], format='csc').toarray()
-                R_inv = np.linalg.inv(R)
-
-            elif binfactor == 2:
-                diagonals = [3./10.*np.ones(nchan_kernel-1), np.ones(nchan_kernel), 3./10.*np.ones(nchan_kernel-1)]     
-                R = sparse.diags(diagonals, [-1, 0, 1], format='csc').toarray()
-                R_inv = np.linalg.inv(R)
+                R_inv = np.linalg.inv(R)[500-int(nchan_kernel/2.) : 500+int(math.ceil(nchan_kernel/2.)), 500-int(nchan_kernel/2.) : 500+int(math.ceil(nchan_kernel/2.))]
 
             elif binfactor == 3:
-                diagonals = [1./6.*np.ones(nchan_kernel-1), np.ones(nchan_kernel), 1./6.*np.ones(nchan_kernel-1)]          
+                diagonals = [1./6.*np.ones(1000-1), np.ones(1000), 1./6.*np.ones(1000-1)]          
                 R = sparse.diags(diagonals, [-1, 0, 1], format='csc').toarray()
-                R_inv = np.linalg.inv(R)
+                R_inv = np.linalg.inv(R)[500-int(nchan_kernel/2.) : 500+int(math.ceil(nchan_kernel/2.)), 500-int(nchan_kernel/2.) : 500+int(math.ceil(nchan_kernel/2.))]
 
             elif binfactor == 4:
-                diagonals = [3./26.*np.ones(nchan_kernel-1), np.ones(nchan_kernel), 3./26.*np.ones(nchan_kernel-1)]     
+                diagonals = [3./26.*np.ones(1000-1), np.ones(1000), 3./26.*np.ones(1000-1)]     
                 R = sparse.diags(diagonals, [-1, 0, 1], format='csc').toarray()
-                R_inv = np.linalg.inv(R)
+                R_inv = np.linalg.inv(R)[500-int(nchan_kernel/2.) : 500+int(math.ceil(nchan_kernel/2.)), 500-int(nchan_kernel/2.) : 500+int(math.ceil(nchan_kernel/2.))]
 
         if verbose: 
             t1 = time.time()
@@ -558,25 +566,20 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
                     # treat binning factors larger than 4 as having no channel correlation (valid for Hanning window function)
                     R_inv = np.identity(nchan_kernel)
 
-                elif binfactor == 1:
-                    diagonals = [2./3.*np.ones(nchan_kernel-1), np.ones(nchan_kernel), 2./3.*np.ones(nchan_kernel-1)]         
+                elif (binfactor == 1) or (binfactor == 2):
+                    diagonals = [3./10.*np.ones(1000-1), np.ones(1000), 3./10.*np.ones(1000-1)]     
                     R = sparse.diags(diagonals, [-1, 0, 1], format='csc').toarray()
-                    R_inv = np.linalg.inv(R)
-
-                elif binfactor == 2:
-                    diagonals = [3./10.*np.ones(nchan_kernel-1), np.ones(nchan_kernel), 3./10.*np.ones(nchan_kernel-1)]     
-                    R = sparse.diags(diagonals, [-1, 0, 1], format='csc').toarray()
-                    R_inv = np.linalg.inv(R)
+                    R_inv = np.linalg.inv(R)[500-int(nchan_kernel/2.) : 500+int(math.ceil(nchan_kernel/2.)), 500-int(nchan_kernel/2.) : 500+int(math.ceil(nchan_kernel/2.))]
 
                 elif binfactor == 3:
-                    diagonals = [1./6.*np.ones(nchan_kernel-1), np.ones(nchan_kernel), 1./6.*np.ones(nchan_kernel-1)]          
+                    diagonals = [1./6.*np.ones(1000-1), np.ones(1000), 1./6.*np.ones(1000-1)]          
                     R = sparse.diags(diagonals, [-1, 0, 1], format='csc').toarray()
-                    R_inv = np.linalg.inv(R)
+                    R_inv = np.linalg.inv(R)[500-int(nchan_kernel/2.) : 500+int(math.ceil(nchan_kernel/2.)), 500-int(nchan_kernel/2.) : 500+int(math.ceil(nchan_kernel/2.))]
 
                 elif binfactor == 4:
-                    diagonals = [3./26.*np.ones(nchan_kernel-1), np.ones(nchan_kernel), 3./26.*np.ones(nchan_kernel-1)]     
+                    diagonals = [3./26.*np.ones(1000-1), np.ones(1000), 3./26.*np.ones(1000-1)]     
                     R = sparse.diags(diagonals, [-1, 0, 1], format='csc').toarray()
-                    R_inv = np.linalg.inv(R)
+                    R_inv = np.linalg.inv(R)[500-int(nchan_kernel/2.) : 500+int(math.ceil(nchan_kernel/2.)), 500-int(nchan_kernel/2.) : 500+int(math.ceil(nchan_kernel/2.))]
 
             if verbose: 
                 t1 = time.time()
