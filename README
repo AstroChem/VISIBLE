@@ -24,9 +24,9 @@ VISIBLE (VISIbility Based Line Extraction) - Python package for spectral line ex
     If that approach doesn't work, the dependent packages can be installed piecewise:
 
     > conda install -c conda-forge casacore
-    > conda install -c pkgw-forge casa-python
-    > conda install -c rloomis vis_sample
-    > conda install -c rloomis VISIBLE
+    > conda install -c conda-forge -c pkgw-forge casa-python
+    > conda install -c conda-forge -c rloomis vis_sample
+    > conda install -c conda-forge -c rloomis VISIBLE
     
 
 
