@@ -2,14 +2,35 @@ VISIBLE (VISIbility Based Line Extraction) - Python package for spectral line ex
 ====================================================
 
   Purpose:
-    matched_filter allows you to apply an approximated matched filter to weak line data and extract a stronger signal. 
+    __________
+    The matched_filter() method in VISIBLE allows you to apply an approximated matched filter to interferometric spectral line data and extract a signal. 
 
     The filter can be created from a FITS image or RADMC3D output image, and the weak line data can be a CASA MS or uvfits file.
 
-    The filter response can be output either to a .npy file or returned back to the user (for scripting)
+    The filter response spectrum can be output either to a .npy file or returned back to the user (for scripting)
 
 
-    Parameters
+
+  Installation and dependencies:
+    __________
+    Along with the basic dependencies of numpy, matplotlib, and scipy, VISIBLE depends on the vis_sample (https://github.com/AstroChem/vis_sample), casacore (https://github.com/casacore/casacore), and casa-python (https://anaconda.org/pkgw-forge/casa-python) packages.
+
+    The simplest way to install VISIBLE and its dependent packages is to use the conda package manager for Anaconda python (https://conda.io/docs/user-guide/install/download.html). VISIBLE can be installed by running the command:
+
+    > conda install -c conda-forge -c pkgw-forge -c rloomis VISIBLE
+
+    which will search the channels conda-forge, pkgw-forge (which hosts casa-python) and rloomis (which hosts VISIBLE and vis_sample) for the dependent packages.
+
+    If that approach doesn't work, the dependent packages can be installed piecewise:
+
+    > conda install -c conda-forge casacore
+    > conda install -c pkgw-forge casa-python
+    > conda install -c rloomis vis_sample
+    > conda install -c rloomis VISIBLE
+    
+
+
+  Parameters:
     __________
     filterfile : input filter image or a list of filter images, needs to be in a valid FITS format with units of DEG for the RA and DEC, a RADMC3D image.out file (ascii format), or a SkyImage object from vis_sample. Must have an accurate reference frequency
 
@@ -42,7 +63,8 @@ VISIBLE (VISIbility Based Line Extraction) - Python package for spectral line ex
     verbose - (boolean) flag to print all progress output and timing
 
 
-    Usage:
+
+  Usage:
     __________
     >> from VISIBLE import matched_filter                                                                           # import the matched_filter command  
 
@@ -53,7 +75,7 @@ VISIBLE (VISIbility Based Line Extraction) - Python package for spectral line ex
     >> spectrum = matched_filter(filterfile="my_filter.fits", datafile="observations.ms.cvel", mode="frequency")         # same as above, output with x axis in units of frequency. Input ms should be run through cvel prior to filtering
 
     >> spectrum = matched_filter(filterfile="my_filter.fits", datafile="observations.ms.cvel", mode="velocity")         # same as above, output with x axis in units of lsrk velocity. Input ms should be run through cvel prior to filtering
-
+    
 
 =================================
 
