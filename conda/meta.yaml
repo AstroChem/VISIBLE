@@ -20,20 +20,20 @@ requirements:
   build:
     - python
     - setuptools
-    - python >=2.7.0
-    - numpy >=1.13.1
-    - scipy >=0.19.1
-    - astropy >=2.0.0
+    - python >= 2.7.0
+    - numpy >= 1.13.1
+    - scipy >= 0.19.1
+    - astropy >= 2.0.0
     - matplotlib >= 2.1.0
     - casacore >= 2.4.0
     - casa-python >= 5.1.0
     - vis_sample >= 0.2.2
   run:
     - python
-    - python >=2.7.0
-    - numpy >=1.13.1
-    - scipy >=0.19.1
-    - astropy >=2.0.0
+    - python >= 2.7.0
+    - numpy >= 1.13.1
+    - scipy >= 0.19.1
+    - astropy >= 2.0.0
     - matplotlib >= 2.1.0
     - casacore >= 2.4.0
     - casa-python >= 5.1.0
