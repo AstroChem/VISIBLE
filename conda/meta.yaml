@@ -1,0 +1,57 @@
+{% set name = "VISIBLE" %}
+{% set version = "0.1.0" %}
+{% set hash_type = "sha256" %}
+{% set hash_value = "5f994728edbccf3514bb8cb4cad4b5e3e9d12e4170b7cbcc0ee0e1606253634f" %}
+
+package:
+  name: '{{ name|lower }}'
+  version: '{{ version }}'
+
+source:
+  fn: '{{ name }}-{{ version }}.tar.gz'
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  '{{ hash_type }}': '{{ hash_value }}'
+
+build:
+  number: 0
+  script: python setup.py install  --single-version-externally-managed --record=record.txt
+
+requirements:
+  build:
+    - python
+    - setuptools
+    - python >=2.7.0
+    - numpy >=1.13.1
+    - scipy >=0.19.1
+    - astropy >=2.0.0
+    - matplotlib >= 2.1.0
+    - casacore >= 2.4.0
+    - casa-python >= 5.1.0
+    - vis_sample >= 0.2.2
+  run:
+    - python
+    - python >=2.7.0
+    - numpy >=1.13.1
+    - scipy >=0.19.1
+    - astropy >=2.0.0
+    - matplotlib >= 2.1.0
+    - casacore >= 2.4.0
+    - casa-python >= 5.1.0
+    - vis_sample >= 0.2.2
+
+test:
+  imports:
+    - VISIBLE
+
+about:
+  home: https://github.com/AstroChem/vis_sample
+  license: MIT License
+  license_family: MIT
+  license_file: ''
+  summary: Interferometric matched filtering
+  description: "The matched_filter() method in VISIBLE allows you to apply an approximated matched filter to interferometric spectral line data and extract a signal.\n    "
+  doc_url: ''
+  dev_url: ''
+
+extra:
+  recipe-maintainers: ''

@@ -9,9 +9,7 @@ import time
 import math
 
 def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_distance=None, interpolate=True, weights='renormalize', norm_chans=None, window_func='Hanning', binfactor=2, outfile=None, mode='channel', restfreq=None, plot=False, verbose=False):
-    """Applies an approximated matched filter to interferometric data to boost SNR
-
-    matched_filter allows you to apply an approximated matched filter to weak line data and extract a stronger signal. 
+    """The matched_filter() method in VISIBLE allows you to apply an approximated matched filter to interferometric spectral line data and extract a signal. 
 
     The filter can be created from a FITS image or RADMC3D output image, and the weak line data can be a CASA MS or uvfits file.
 
