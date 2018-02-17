@@ -82,6 +82,11 @@ VISIBLE (VISIbility Based Line Extraction) - Python package for spectral line ex
     >> spectrum = matched_filter(filterfile="my_filter.fits", datafile="observations.ms.cvel", mode="velocity")         # same as above, output with x axis in units of lsrk velocity. Input ms should be run through cvel prior to filtering
     
 
+
+  Example:
+    __________
+    An example is available at https//doi.org/10.5281/zenodo.1174545, which recreates Figure 5 from Loomis et al.
+
 =================================
 
 
