@@ -29,6 +29,11 @@ VISIBLE (VISIbility Based Line Extraction) - Python package for spectral line ex
     > conda install -c conda-forge -c rloomis VISIBLE
     
 
+    VISIBLE can also be installed through pip from pypi (https://pypi.org/project/VISIBLE):
+    
+    > pip install VISIBLE
+
+
 
   Parameters:
     __________
