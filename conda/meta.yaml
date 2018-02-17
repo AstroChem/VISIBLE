@@ -1,7 +1,7 @@
 {% set name = "VISIBLE" %}
 {% set version = "0.1.0" %}
 {% set hash_type = "sha256" %}
-{% set hash_value = "5f994728edbccf3514bb8cb4cad4b5e3e9d12e4170b7cbcc0ee0e1606253634f" %}
+{% set hash_value = "3f3df3a99a29be4226817325541f71697399dfa7672a5fdad2db46f9ebb24c83" %}
 
 package:
   name: '{{ name|lower }}'
@@ -9,7 +9,7 @@ package:
 
 source:
   fn: '{{ name }}-{{ version }}.tar.gz'
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  url: https://files.pythonhosted.org/packages/75/d7/0a11adc9f409932ae77b0186686ac6bb54b781073f3d51b0f25a990397a9/VISIBLE-0.1.0.tar.gz
   '{{ hash_type }}': '{{ hash_value }}'
 
 build:
