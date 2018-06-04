@@ -213,7 +213,7 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
 
         if verbose: 
             t1 = time.time()
-            print "Read filter image: " + datafile
+            print "Read filter image: " + filterfile
             print "Filter read time = " + str(t1-t0)
 
 
