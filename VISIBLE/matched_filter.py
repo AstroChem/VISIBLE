@@ -267,7 +267,7 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
 
             if verbose: 
                 t1 = time.time()
-                print "Filter interpolated"
+                print "Filter interpolated from " + str(nchan_filter) + " channels to " + str(len(filter_img.freqs)) + " channels"
                 print "Filter interpolation time = " + str(t1-t0)
 
 
@@ -534,7 +534,7 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
 
                 if verbose: 
                     t1 = time.time()
-                    print "Filter interpolated"
+                	print "Filter interpolated from " + str(nchan_filter) + " channels to " + str(len(filter_img.freqs)) + " channels"
                     print "Filter interpolation time = " + str(t1-t0)
 
 
