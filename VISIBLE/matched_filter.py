@@ -1,7 +1,4 @@
 import numpy as np
-import sys
-sys.path.append('/lustre/naasc/users/rloomis/feanor0_backup/git/vis_sampler/')
-sys.path.append('/lustre/naasc/users/rloomis/feanor0_backup/git/vis_sampler/vis_sample')
 from vis_sample import vis_sample
 import matplotlib.pylab as pl
 from vis_sample.file_handling import *
