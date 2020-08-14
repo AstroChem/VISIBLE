@@ -1,7 +1,9 @@
 import numpy as np
+import sys
+sys.path.append('/lustre/naasc/users/rloomis/feanor0_backup/git/vis_sampler/')
+sys.path.append('/lustre/naasc/users/rloomis/feanor0_backup/git/vis_sampler/vis_sample')
 from vis_sample import vis_sample
 import matplotlib.pylab as pl
-import sys
 from vis_sample.file_handling import *
 from scipy import ndimage
 from scipy import sparse
@@ -46,7 +48,7 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
 
     plot - (optional) plot the real portion of the filter response spectrum against the x-axis chosen by the 'mode' parameter. The output will still be either returned or saved to 'outfile'.
 
-    verbose - (boolean) flag to print all progress output and timing
+    verbose - (boolean) flag to print(all progress output and timing
 
 
     Usage:
@@ -64,33 +66,33 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
 
     # Error/warning cases #
     if not filterfile:
-        print "ERROR: Please supply an input filter image or list of filter images"
+        print("ERROR: Please supply an input filter image or list of filter images")
         return 
 
     if not datafile:
-        print "ERROR: Please supply an input MS or uvfits file to filter"
+        print("ERROR: Please supply an input MS or uvfits file to filter")
         return 
 
     if mode=='velocity':
-        print "WARNING: ALMA does not Doppler track, make sure that the datafile has been run through cvel or velocities will not be correct"
+        print("WARNING: ALMA does not Doppler track, make sure that the datafile has been run through cvel or velocities will not be correct")
 
     if mode=='frequency':
-        print "WARNING: ALMA does not Doppler track, make sure that the datafile has been run through cvel or frequencies will not be correct"
+        print("WARNING: ALMA does not Doppler track, make sure that the datafile has been run through cvel or frequencies will not be correct")
 
     if (window_func != "Hanning") and (window_func != "none"):
-        print 'ERROR: Please specify a valid window function. Options are "Hanning" or "none".'
+        print('ERROR: Please specify a valid window function. Options are "Hanning" or "none".')
         return
 
     if not (type(binfactor) is int):
-        print 'ERROR: Please specify a valid binning factor. Value should be a positive integer and values greater than 4 will result in data being treated as having no channel correlation.'
+        print('ERROR: Please specify a valid binning factor. Value should be a positive integer and values greater than 4 will result in data being treated as having no channel correlation.')
         return
     elif binfactor < 1:
-        print 'ERROR: Please specify a valid binning factor. Value should be a positive integer and values greater than 4 will result in data being treated as having no channel correlation.'
+        print('ERROR: Please specify a valid binning factor. Value should be a positive integer and values greater than 4 will result in data being treated as having no channel correlation.')
         return
 
     if outfile:
         if not ((type(outfile) is str) or (type(outfile) is list)):
-            print "ERROR: Please supply a valid outfile path or list of paths (matching the number of filter images)."
+            print("ERROR: Please supply a valid outfile path or list of paths (matching the number of filter images).")
             return
 
     # parse whether we have a bank of filters or single filter and check that number of outfiles matches
@@ -99,7 +101,7 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
         nfilter = len(filterfile)
         if outfile:
             if len(outfile) != len(filterfile):
-                print "ERROR: Number of filter images must match the number of outfile paths."
+                print("ERROR: Number of filter images must match the number of outfile paths.")
                 return
     else:
         multifilter = False
@@ -112,7 +114,7 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
 
     # read visibilities in from the data file
     if verbose:
-        print "Reading data file: "+datafile
+        print("Reading data file: "+datafile)
         t0 = time.time()
 
     try:
@@ -121,7 +123,7 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
         try:
             data = import_data_ms(datafile)
         except RuntimeError:
-            print "Not a valid data file. Please check that the file is a uvfits file or measurement set"
+            print("Not a valid data file. Please check that the file is a uvfits file or measurement set")
             sys.exit(1)
 
     nvis = data.VV.shape[0]
@@ -132,13 +134,13 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
     wgt_dims = len(data.wgts.shape)
 
     if wgt_dims == 2:
-        print "Dataset has a weight spectrum, compressing channelized weights via averaging to a single weight per visibility."
+        print("Dataset has a weight spectrum, compressing channelized weights via averaging to a single weight per visibility.")
         data.wgts = np.mean(data.wgts, axis=1)
 
     if weights == 'statwt':
         data.wgts *= 0.5
     elif weights == 'preserve':
-        print "Assuming data weights are correct as-is. If resulting spectrum is not properly normalized, consider using 'renormalize' or applying statwt to the data."
+        print("Assuming data weights are correct as-is. If resulting spectrum is not properly normalized, consider using 'renormalize' or applying statwt to the data.")
     else:
         # using weight value as a temporary sketchy replacement for finding flagged visibilities
         wgt_mean = np.mean(data.wgts[data.wgts > 0.00001])
@@ -152,11 +154,11 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
     weight_offset = np.abs(wgt_mean - 1/data_std**2)/wgt_mean*100
 
     if weight_offset > 25.:
-        print "WARNING: data weights are more than 25% offset that expected from the total data variance. This may be due to very strong lines in the data or improperly initialized data weights. If resulting spectrum is not properly normalized, consider using 'renormalize' or applying statwt to the data."
+        print("WARNING: data weights are more than 25% offset that expected from the total data variance. This may be due to very strong lines in the data or improperly initialized data weights. If resulting spectrum is not properly normalized, consider using 'renormalize' or applying statwt to the data.")
 
     # check to see if binfactor is 1. if so, bin by a factor of 2 as covariance matrix of unbinned data is ill-conditioned
     if binfactor == 1 and window_func == "Hanning":
-        print "WARNING: unbinned Hanning smoothed data has an ill-conditioned covariance matrix. Binning data by a factor of 2 and adjusting weights to keep numerically stable. Note that channel numbers in the output filter response will correspond to the binned data. Frequencies or velocities (if selected as output mode) will be properly calculated for the binned data."
+        print("WARNING: unbinned Hanning smoothed data has an ill-conditioned covariance matrix. Binning data by a factor of 2 and adjusting weights to keep numerically stable. Note that channel numbers in the output filter response will correspond to the binned data. Frequencies or velocities (if selected as output mode) will be properly calculated for the binned data.")
         # force the data to have an even number of channels
         if data.VV.shape[1] & 0x1:
             data.VV = data.VV[:,:-1]
@@ -168,8 +170,8 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
 
     if verbose: 
         t1 = time.time()
-        print "Read data file: "+datafile
-        print "Data read time = " + str(t1-t0)
+        print("Read data file: "+datafile)
+        print("Data read time = " + str(t1-t0))
         
 
 
@@ -187,34 +189,34 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
 
         # now that we have the data, let's import the filter file
         if verbose:
-            print "Reading filter file: "+filterfile
+            print("Reading filter file: "+filterfile)
             t0 = time.time()
 
         if isinstance(filterfile, SkyImage):
             filter_img = filterfile
         elif "image.out" in filterfile:
             if src_distance is None:
-                 print "A source distance in pc needs to be provided in order to process a RADMC3D image file"
+                 print("A source distance in pc needs to be provided in order to process a RADMC3D image file")
                  return 
             else: filter_img = import_model_radmc(src_distance, filterfile)
         elif "fits" in filterfile:
             filter_img = import_model_fits(filterfile)
         else:
-            print "Not a valid filter image option. Please provide a FITS file, a RADMC3D image file, or a SkyImage object)."
+            print("Not a valid filter image option. Please provide a FITS file, a RADMC3D image file, or a SkyImage object).")
             return 
 
         # the number of filter channels needs to be smaller than the data channels
         if (len(filter_img.freqs) >= len(data.freqs)):
-            print "Number of channels in filter exceeds number of data channels. Filtering cannot continue."
+            print("Number of channels in filter exceeds number of data channels. Filtering cannot continue.")
             return
 
         elif (len(filter_img.freqs) >= len(data.freqs)*0.5):
-            print "WARNING: Number of channels in data file seems small compared to width of filter. Make sure there is adequate baseline in the data file."
+            print("WARNING: Number of channels in data file seems small compared to width of filter. Make sure there is adequate baseline in the data file.")
 
         if verbose: 
             t1 = time.time()
-            print "Read filter image: " + filterfile
-            print "Filter read time = " + str(t1-t0)
+            print("Read filter image: " + filterfile)
+            print("Filter read time = " + str(t1-t0))
 
 
 
@@ -225,7 +227,7 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
         # if interpolation enabled, then make filter match data resolution (in velocity space)
         if interpolate:
             if verbose:
-                print "Interpolating filter"
+                print("Interpolating filter")
                 t0 = time.time()
 
             # determine the reference frequencies and freq spacings
@@ -267,8 +269,8 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
 
             if verbose: 
                 t1 = time.time()
-                print "Filter interpolated from " + str(nchan_filter) + " channels to " + str(len(filter_img.freqs)) + " channels"
-                print "Filter interpolation time = " + str(t1-t0)
+                print("Filter interpolated from " + str(nchan_filter) + " channels to " + str(len(filter_img.freqs)) + " channels")
+                print("Filter interpolation time = " + str(t1-t0))
 
 
 
@@ -277,7 +279,7 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
         #########################################
 
         if verbose:
-            print "Generating kernel"
+            print("Generating kernel")
             t0 = time.time()
 
         nchan_kernel = len(filter_img.freqs)
@@ -312,8 +314,8 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
 
         if verbose: 
             t1 = time.time()
-            print "Kernel generated"
-            print "Kernel generation time = " + str(t1-t0)
+            print("Kernel generated")
+            print("Kernel generation time = " + str(t1-t0))
 
 
         ###############################
@@ -321,7 +323,7 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
         ###############################
 
         if verbose:
-            print "Starting kernel convolution"
+            print("Starting kernel convolution")
             t0 = time.time()
 
         xc = np.zeros((data.VV.shape[1] - nchan_kernel + 1), dtype='complex128')  
@@ -346,9 +348,9 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
 
         if verbose: 
             t1 = time.time()
-            print "Data filtered"
-            print "Kernel convolution time = " + str(t1-t0)
-            print "max signal = " + str(np.max(np.real(xc))) + " sigma"
+            print("Data filtered")
+            print("Kernel convolution time = " + str(t1-t0))
+            print("max signal = " + str(np.max(np.real(xc))) + " sigma")
 
 
         ###############################
@@ -366,6 +368,7 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
         else:
             if not restfreq:
                 restfreq = np.mean(data.freqs)/1.e6
+
             response_freqs = (np.squeeze(data.freqs[nchan_kernel/2:-nchan_kernel/2+1]) + data_delfreq/2.0)/1.e6
             response_vels = (restfreq - response_freqs)/restfreq*c_kms
             x_axis = response_vels
@@ -454,34 +457,34 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
 
             # now that we have the data, let's import the filter file
             if verbose:
-                print "Reading filter file " + str(filter_index+1) + " of " + str(nfilter) + ": " + curr_filterfile
+                print("Reading filter file " + str(filter_index+1) + " of " + str(nfilter) + ": " + curr_filterfile)
                 t0 = time.time()
 
             if isinstance(curr_filterfile, SkyImage):
                 filter_img = curr_filterfile
             elif "image.out" in curr_filterfile:
                 if src_distance is None:
-                     print "ERROR: A source distance in pc needs to be provided in order to process a RADMC3D image file"
+                     print("ERROR: A source distance in pc needs to be provided in order to process a RADMC3D image file")
                      return 
                 else: filter_img = import_model_radmc(src_distance, curr_filterfile)
             elif "fits" in curr_filterfile:
                 filter_img = import_model_fits(curr_filterfile)
             else:
-                print "ERROR: Not a valid filter image option. Please provide a FITS file, a RADMC3D image file, or a SkyImage object)."
+                print("ERROR: Not a valid filter image option. Please provide a FITS file, a RADMC3D image file, or a SkyImage object).")
                 return 
 
             # the number of filter channels needs to be smaller than the data channels
             if (len(filter_img.freqs) >= len(data.freqs)):
-                print "ERROR: Number of channels in filter exceeds number of data channels. Filtering cannot continue."
+                print("ERROR: Number of channels in filter exceeds number of data channels. Filtering cannot continue.")
                 return
 
             elif (len(filter_img.freqs) >= len(data.freqs)*0.5):
-                print "WARNING: Number of channels in data file seems small compared to width of filter. Make sure there is adequate baseline in the data file."
+                print("WARNING: Number of channels in data file seems small compared to width of filter. Make sure there is adequate baseline in the data file.")
 
             if verbose: 
                 t1 = time.time()
-                print "Read filter image: " + curr_filterfile
-                print "Filter read time = " + str(t1-t0)
+                print("Read filter image: " + curr_filterfile)
+                print("Filter read time = " + str(t1-t0))
 
 
 
@@ -492,7 +495,7 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
             # if interpolation enabled, then make filter match data resolution (in velocity space)
             if interpolate:
                 if verbose:
-                    print "Interpolating filter"
+                    print("Interpolating filter")
                     t0 = time.time()
 
                 # determine the reference frequencies and freq spacings
@@ -534,8 +537,8 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
 
                 if verbose: 
                     t1 = time.time()
-                    print "Filter interpolated from " + str(nchan_filter) + " channels to " + str(len(filter_img.freqs)) + " channels"
-                    print "Filter interpolation time = " + str(t1-t0)
+                    print("Filter interpolated from " + str(nchan_filter) + " channels to " + str(len(filter_img.freqs)) + " channels")
+                    print("Filter interpolation time = " + str(t1-t0))
 
 
 
@@ -544,7 +547,7 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
             #########################################
 
             if verbose:
-                print "Generating kernel"
+                print("Generating kernel")
                 t0 = time.time()
 
             nchan_kernel = len(filter_img.freqs)
@@ -581,8 +584,8 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
 
             if verbose: 
                 t1 = time.time()
-                print "Kernel generated"
-                print "Kernel generation time = " + str(t1-t0)
+                print("Kernel generated")
+                print("Kernel generation time = " + str(t1-t0))
 
 
             ###############################
@@ -590,7 +593,7 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
             ###############################
 
             if verbose:
-                print "Starting kernel convolution"
+                print("Starting kernel convolution")
                 t0 = time.time()
 
             curr_xc = np.zeros((data.VV.shape[1] - nchan_kernel + 1), dtype='complex128')  
@@ -615,9 +618,9 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
 
             if verbose: 
                 t1 = time.time()
-                print "Data filtered"
-                print "Kernel convolution time = " + str(t1-t0)
-                print "max signal = " + str(np.max(np.real(curr_xc))) + " sigma"
+                print("Data filtered")
+                print("Kernel convolution time = " + str(t1-t0))
+                print("max signal = " + str(np.max(np.real(curr_xc))) + " sigma")
 
 
             ###############################
@@ -629,13 +632,13 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
                 curr_x_axis = response_chans
 
             elif mode=='frequency':
-                response_freqs = (np.squeeze(data.freqs[nchan_kernel/2:-nchan_kernel/2+1]) + data_delfreq/2.0)/1.e6
+                response_freqs = (np.squeeze(data.freqs[int(nchan_kernel/2+1):int(-nchan_kernel/2+1)]) + data_delfreq/2.0)/1.e6
                 curr_x_axis = response_freqs
 
             else:
                 if not restfreq:
                     restfreq = np.mean(data.freqs)/1.e6
-                response_freqs = (np.squeeze(data.freqs[nchan_kernel/2:-nchan_kernel/2+1]) + data_delfreq/2.0)/1.e6
+                response_freqs = (np.squeeze(data.freqs[int(nchan_kernel/2+1):int(-nchan_kernel/2+1)]) + data_delfreq/2.0)/1.e6
                 response_vels = (restfreq - response_freqs)/restfreq*c_kms
                 curr_x_axis = response_vels
 
@@ -691,6 +694,7 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
             # simplest case is just writing to a file:
             if outfile:
                 # save it
+                print(curr_x_axis.shape, curr_xc.shape)
                 np.save(curr_outfile, np.vstack((curr_x_axis, curr_xc)))    
             
             # otherwise we're going to return the raw output of the filtering
