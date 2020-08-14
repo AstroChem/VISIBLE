@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup (
     name = 'VISIBLE',
-    version = '0.2.3',
+    version = '0.2.4',
 
     # This package actually *is* zip-safe, but I've run into issues with
     # installing it as a Zip: in particular, the install sometimes fails with
