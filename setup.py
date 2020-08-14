@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup (
     name = 'VISIBLE',
-    version = '0.2.0',
+    version = '0.2.1',
 
     # This package actually *is* zip-safe, but I've run into issues with
     # installing it as a Zip: in particular, the install sometimes fails with
@@ -51,8 +51,8 @@ setup (
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.6',
         'Topic :: Scientific/Engineering :: Astronomy',
     ],
 )
