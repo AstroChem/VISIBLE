@@ -13,26 +13,13 @@ VISIBLE (VISIbility Based Line Extraction) - Python package for spectral line ex
 
   Installation and dependencies:
     __________
-    Along with the basic dependencies of numpy, matplotlib, and scipy, VISIBLE depends on the vis_sample (https://github.com/AstroChem/vis_sample), casacore (https://github.com/casacore/casacore), and casa-python (https://anaconda.org/pkgw-forge/casa-python) packages.
+    Along with the basic dependencies of numpy, matplotlib, and scipy, VISIBLE depends on the vis_sample (https://github.com/AstroChem/vis_sample) package.
 
-    The simplest way to install VISIBLE and its dependent packages is to use the conda package manager for Anaconda python (https://conda.io/docs/user-guide/install/download.html). VISIBLE can be installed by running the command:
-
-    > conda install -c conda-forge -c pkgw-forge -c rloomis VISIBLE
-
-    which will search the channels conda-forge, pkgw-forge (which hosts casa-python) and rloomis (which hosts VISIBLE and vis_sample) for the dependent packages.
-
-    If that approach doesn't work, the dependent packages can be installed piecewise:
-
-    > conda install -c conda-forge casacore
-    > conda install -c conda-forge -c pkgw-forge casa-python
-    > conda install -c conda-forge -c rloomis vis_sample
-    > conda install -c conda-forge -c rloomis VISIBLE
-    
-
-    VISIBLE can also be installed through pip from pypi (https://pypi.org/project/VISIBLE):
+    The simplest way to install VISIBLE and its dependent packages is to use pip (https://pypi.org/project/VISIBLE):
     
     > pip install VISIBLE
 
+    With release 0.2, conda installation has been deprecated, please use pip. Python version must be 3.6.
 
 
   Parameters:

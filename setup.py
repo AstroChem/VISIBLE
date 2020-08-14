@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup (
     name = 'VISIBLE',
-    version = '0.2.1',
+    version = '0.2.3',
 
     # This package actually *is* zip-safe, but I've run into issues with
     # installing it as a Zip: in particular, the install sometimes fails with
@@ -26,7 +26,6 @@ setup (
     # more stuff, but others don't need much of anything. But, it's pretty
     # much impossible to do science without Numpy.
     install_requires = [
-        'python >= 3.6.0',
         'numpy >= 1.13.1',
         'scipy >= 0.19.1',
         'astropy >= 2.0.0',
