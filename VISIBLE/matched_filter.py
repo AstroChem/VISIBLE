@@ -231,6 +231,9 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
             filter_rfreq = np.mean(filter_img.freqs)
             filter_delfreq = filter_img.freqs[1] - filter_img.freqs[0]
 
+            if data.freqs.shape[1] > 1:
+                print("WARNING: Detected multiple spws in the data. Proceeding with assumption that all data share same frequency range. Do not trust results unless this is confirmed")
+                data.freqs = data.freqs[:,0]
             data_rfreq = np.mean(data.freqs)
             data_delfreq = data.freqs[1] - data.freqs[0]
 
@@ -282,7 +285,7 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
         nchan_kernel = len(filter_img.freqs)
 
         kernel = np.empty(nchan_kernel*nvis, dtype='complex128').reshape(nvis, nchan_kernel)
-        kernel[:,:] = vis_sample(imagefile=filter_img, uu=data.uu, vv=data.vv, mu_RA=mu_RA, mu_DEC=mu_DEC)
+        kernel[:,:] = vis_sample(imagefile=filter_img, uu=data.uu, vv=data.vv, mu_RA=mu_RA, mu_DEC=mu_DEC, mod_interp=False)
 
         # calculate the noise covariance matrix and its inverse
         if window_func == "none":
