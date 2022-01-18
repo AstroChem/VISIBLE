@@ -374,8 +374,6 @@ def matched_filter(filterfile=None, datafile=None, mu_RA=0., mu_DEC=0., src_dist
             x_axis = response_vels
 
 
-
-
         ############################
         #   Plot filter response   #
         ############################
